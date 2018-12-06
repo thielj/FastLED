@@ -276,6 +276,26 @@ Lib8tion is pronounced like 'libation': lie-BAY-shun
 #define BLEND8_AVRASM 0
 #endif
 
+#elif defined(__STM8__)
+
+#define QADD8_C 0
+#define QADD7_C 0
+#define QSUB8_C 0
+#define SCALE8_C 0
+#define SCALE16BY8_C 1
+#define SCALE16_C 1
+#define ABS8_C 1
+#define MUL8_C 1
+#define QMUL8_C 1
+#define ADD8_C 1
+#define SUB8_C 1
+#define EASE8_C 1
+#define AVG8_C 1
+#define AVG7_C 1
+#define AVG16_C 1
+#define AVG15_C 1
+#define BLEND8_C 1
+
 #else
 
 // unspecified architecture, so
@@ -414,7 +434,7 @@ LIB8STATIC float sfract15ToFloat( sfract15 y)
 ///                  representable range is basically
 LIB8STATIC sfract15 floatToSfract15( float f)
 {
-    return f * 32768.0;
+    return (sfract15)(f * 32768.0);
 }
 
 
@@ -1071,7 +1091,7 @@ public: \
     void trigger() { mPrevTrigger = getTime() - mPeriod; }; \
         \
     operator bool() { return ready(); } \
-};
+}
 INSTANTIATE_EVERY_N_TIME_PERIODS(CEveryNMillis,uint32_t,GET_MILLIS);
 INSTANTIATE_EVERY_N_TIME_PERIODS(CEveryNSeconds,uint16_t,seconds16);
 INSTANTIATE_EVERY_N_TIME_PERIODS(CEveryNBSeconds,uint16_t,bseconds16);

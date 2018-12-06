@@ -6,8 +6,10 @@
 #include "led_sysdefs.h"
 #include <stddef.h>
 
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#endif
 
 ///@file fastpin.h
 /// Class base definitions for defining fast pin access
@@ -55,7 +57,7 @@ public:
 	inline void lo() __attribute__ ((always_inline)) { *mPort &= ~mPinMask; }
 
 	inline void strobe() __attribute__ ((always_inline)) { toggle(); toggle(); }
-	inline void toggle() __attribute__ ((always_inline)) { *mInPort = mPinMask; }
+	inline void toggle() __attribute__ ((always_inline)) { *mPort ^= mPinMask; }
 
 	inline void hi(register port_ptr_t port) __attribute__ ((always_inline)) { *port |= mPinMask; }
 	inline void lo(register port_ptr_t port) __attribute__ ((always_inline)) { *port &= ~mPinMask; }
@@ -106,23 +108,23 @@ public:
 	typedef volatile RwReg * port_ptr_t;
 	typedef RwReg port_t;
 
-	inline void setOutput() { /* TODO: Set pin output */ }
-	inline void setInput() { /* TODO: Set pin input */ }
+	ALWAYS_INLINE inline void setOutput() { /* TODO: Set pin output */ }
+	ALWAYS_INLINE inline void setInput() { /* TODO: Set pin input */ }
 
 	inline void hi() __attribute__ ((always_inline)) { *mPort |= mPinMask; }
-	inline void lo() __attribute__ ((always_inline)) { *mPort &= ~mPinMask; }
+	inline void lo() __attribute__ ((always_inline)) { *mPort &= ~(unsigned)mPinMask; }
 
 	inline void strobe() __attribute__ ((always_inline)) { toggle(); toggle(); }
-	inline void toggle() __attribute__ ((always_inline)) { *mInPort = mPinMask; }
+	inline void toggle() __attribute__ ((always_inline)) { *mPort ^= mPinMask; }
 
 	inline void hi(register port_ptr_t port) __attribute__ ((always_inline)) { *port |= mPinMask; }
-	inline void lo(register port_ptr_t port) __attribute__ ((always_inline)) { *port &= ~mPinMask; }
+	inline void lo(register port_ptr_t port) __attribute__ ((always_inline)) { *port &= ~(unsigned)mPinMask; }
 	inline void set(register port_t val) __attribute__ ((always_inline)) { *mPort = val; }
 
 	inline void fastset(register port_ptr_t port, register port_t val) __attribute__ ((always_inline)) { *port  = val; }
 
 	port_t hival() __attribute__ ((always_inline)) { return *mPort | mPinMask;  }
-	port_t loval() __attribute__ ((always_inline)) { return *mPort & ~mPinMask; }
+	port_t loval() __attribute__ ((always_inline)) { return *mPort & ~(unsigned)mPinMask; }
 	port_ptr_t  port() __attribute__ ((always_inline)) { return mPort; }
 	port_t mask() __attribute__ ((always_inline)) { return mPinMask; }
 
@@ -204,7 +206,7 @@ template<uint8_t PIN> volatile RoReg *FastPin<PIN>::sInPort;
 template<uint8_t PIN> class FastPin {
 	constexpr static bool validpin() { return false; }
 
-	static_assert(validpin(), "Invalid pin specified");
+        STATIC_ASSERT(validpin(), "Invalid pin specified");
 
 	static void _init() {
 	}
@@ -243,6 +245,8 @@ typedef volatile uint32_t * ptr_reg32_t;
 
 FASTLED_NAMESPACE_END
 
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 #endif // __INC_FASTPIN_H

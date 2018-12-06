@@ -44,6 +44,8 @@ LIB8STATIC_ALWAYS_INLINE uint8_t qadd8( uint8_t i, uint8_t j)
 #elif QADD8_ARM_DSP_ASM == 1
     asm volatile( "uqadd8 %0, %0, %1" : "+r" (i) : "r" (j));
     return i;
+#elif __STM8__
+    return _stm8_qadd8( i, j);
 #else
 #error "No implementation for qadd8 available."
 #endif
@@ -52,7 +54,7 @@ LIB8STATIC_ALWAYS_INLINE uint8_t qadd8( uint8_t i, uint8_t j)
 /// Add one byte to another, saturating at 0x7F
 /// @param i - first byte to add
 /// @param j - second byte to add
-/// @returns the sum of i & j, capped at 0xFF
+/// @returns the sum of i & j, capped at 0x7F
 LIB8STATIC_ALWAYS_INLINE int8_t qadd7( int8_t i, int8_t j)
 {
 #if QADD7_C == 1
@@ -78,6 +80,8 @@ LIB8STATIC_ALWAYS_INLINE int8_t qadd7( int8_t i, int8_t j)
 #elif QADD7_ARM_DSP_ASM == 1
     asm volatile( "qadd8 %0, %0, %1" : "+r" (i) : "r" (j));
     return i;
+#elif __STM8__
+    return _stm8_qadd7( i, j);
 #else
 #error "No implementation for qadd7 available."
 #endif
@@ -108,6 +112,8 @@ LIB8STATIC_ALWAYS_INLINE uint8_t qsub8( uint8_t i, uint8_t j)
          : "a"  (j) );
 
     return i;
+#elif __STM8__
+    return _stm8_qsub8( i, j);
 #else
 #error "No implementation for qsub8 available."
 #endif

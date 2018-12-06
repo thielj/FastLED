@@ -221,10 +221,10 @@ void CFastLED::setMaxRefreshRate(uint16_t refresh, bool constrain) {
     // if we're constraining, the new value of m_nMinMicros _must_ be higher than previously (because we're only
     // allowed to slow things down if constraining)
     if(refresh > 0) {
-      m_nMinMicros = ( (1000000/refresh) >  m_nMinMicros) ? (1000000/refresh) : m_nMinMicros;
+      m_nMinMicros = ( (1000000u/refresh) >  m_nMinMicros) ? (1000000u/refresh) : m_nMinMicros;
     }
   } else if(refresh > 0) {
-    m_nMinMicros = 1000000 / refresh;
+    m_nMinMicros = 1000000u / refresh;
   } else {
     m_nMinMicros = 0;
   }

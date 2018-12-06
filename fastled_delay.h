@@ -43,13 +43,36 @@ public:
 #if defined(__AVR__)
 #  define FL_NOP __asm__ __volatile__ ("cp r0,r0\n");
 #  define FL_NOP2 __asm__ __volatile__ ("rjmp .+0");
+#elif defined(__STM8__)
+#  define FL_NOP nop();
+#  define FL_NOP2 nop(); nop();
 #else
 #  define FL_NOP __asm__ __volatile__ ("nop\n");
 #  define FL_NOP2 __asm__ __volatile__ ("nop\n\t nop\n");
 #endif
 
 // predeclaration to not upset the compiler
-template<int CYCLES> inline void delaycycles();
+template<int CYCLES> ALWAYS_INLINE inline void delaycycles();
+
+// pre-instantiations for values small enough to not need the loop, as well as sanity holders
+// for some negative values. Must preced first use to noy upset IAR compiler for STM8.
+template<> ALWAYS_INLINE inline void delaycycles<-10>() {}
+template<> ALWAYS_INLINE inline void delaycycles<-9>() {}
+template<> ALWAYS_INLINE inline void delaycycles<-8>() {}
+template<> ALWAYS_INLINE inline void delaycycles<-7>() {}
+template<> ALWAYS_INLINE inline void delaycycles<-6>() {}
+template<> ALWAYS_INLINE inline void delaycycles<-5>() {}
+template<> ALWAYS_INLINE inline void delaycycles<-4>() {}
+template<> ALWAYS_INLINE inline void delaycycles<-3>() {}
+template<> ALWAYS_INLINE inline void delaycycles<-2>() {}
+template<> ALWAYS_INLINE inline void delaycycles<-1>() {}
+template<> ALWAYS_INLINE inline void delaycycles<0>() {}
+template<> ALWAYS_INLINE inline void delaycycles<1>() {FL_NOP;}
+template<> ALWAYS_INLINE inline void delaycycles<2>() {FL_NOP2;}
+template<> ALWAYS_INLINE inline void delaycycles<3>() {FL_NOP;FL_NOP2;}
+template<> ALWAYS_INLINE inline void delaycycles<4>() {FL_NOP2;FL_NOP2;}
+template<> ALWAYS_INLINE inline void delaycycles<5>() {FL_NOP2;FL_NOP2;FL_NOP;}
+
 template<int CYCLES> inline void delaycycles_min1() {
   delaycycles<1>();
   delaycycles<CYCLES-1>();
@@ -76,7 +99,7 @@ template<int LOOP, int PAD> inline void _delaycycles_AVR() {
 		);
 }
 
-template<int CYCLES> __attribute__((always_inline)) inline void delaycycles() {
+template<int CYCLES> ALWAYS_INLINE inline void delaycycles() {
 	_delaycycles_AVR<CYCLES / 3, CYCLES % 3>();
 }
 #else
@@ -96,30 +119,11 @@ template<int CYCLES> __attribute__((always_inline)) inline void delaycycles() {
 // }
 
 
-template<int CYCLES> __attribute__((always_inline)) inline void delaycycles() {
+template<int CYCLES> ALWAYS_INLINE inline void delaycycles() {
 	// _delaycycles_ARM<CYCLES / 3, CYCLES % 3>();
 	FL_NOP; delaycycles<CYCLES-1>();
 }
 #endif
-
-// pre-instantiations for values small enough to not need the loop, as well as sanity holders
-// for some negative values.
-template<> __attribute__((always_inline)) inline void delaycycles<-10>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<-9>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<-8>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<-7>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<-6>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<-5>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<-4>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<-3>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<-2>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<-1>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<0>() {}
-template<> __attribute__((always_inline)) inline void delaycycles<1>() {FL_NOP;}
-template<> __attribute__((always_inline)) inline void delaycycles<2>() {FL_NOP2;}
-template<> __attribute__((always_inline)) inline void delaycycles<3>() {FL_NOP;FL_NOP2;}
-template<> __attribute__((always_inline)) inline void delaycycles<4>() {FL_NOP2;FL_NOP2;}
-template<> __attribute__((always_inline)) inline void delaycycles<5>() {FL_NOP2;FL_NOP2;FL_NOP;}
 
 // Some timing related macros/definitions
 

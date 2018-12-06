@@ -1,0 +1,3 @@
+[submodule "platforms/stm8/hal"]
+	path = platforms/stm8/hal
+	url = https://github.com/thielj/STM8HAL.git

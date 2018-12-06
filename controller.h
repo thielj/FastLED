@@ -73,7 +73,7 @@ public:
 	virtual void init() = 0;
 
 	///clear out/zero out the given number of leds.
-	virtual void clearLeds(int nLeds) { showColor(CRGB::Black, nLeds, CRGB::Black); }
+	virtual void clearLeds(int nLeds) { CRGB black(0,0,0); showColor(black, nLeds, black); }
 
     /// show function w/integer brightness, will scale for color correction and temperature
     void show(const struct CRGB *data, int nLeds, uint8_t brightness) {
@@ -207,20 +207,20 @@ struct PixelController {
           }
         }
 
-        PixelController(const uint8_t *d, int len, CRGB & s, EDitherMode dither = BINARY_DITHER, bool advance=true, uint8_t skip=0) : mData(d), mLen(len), mLenRemaining(len), mScale(s) {
+        PixelController(const uint8_t *data, int len, CRGB & s, EDitherMode dither = BINARY_DITHER, bool advance=true, uint8_t skip=0) : mData(data), mLen(len), mLenRemaining(len), mScale(s) {
             enable_dithering(dither);
             mData += skip;
             mAdvance = (advance) ? 3+skip : 0;
             initOffsets(len);
         }
 
-        PixelController(const CRGB *d, int len, CRGB & s, EDitherMode dither = BINARY_DITHER) : mData((const uint8_t*)d), mLen(len), mLenRemaining(len), mScale(s) {
+        PixelController(const CRGB *data, int len, CRGB & s, EDitherMode dither = BINARY_DITHER) : mData((const uint8_t*)data), mLen(len), mLenRemaining(len), mScale(s) {
             enable_dithering(dither);
             mAdvance = 3;
             initOffsets(len);
         }
 
-        PixelController(const CRGB &d, int len, CRGB & s, EDitherMode dither = BINARY_DITHER) : mData((const uint8_t*)&d), mLen(len), mLenRemaining(len), mScale(s) {
+        PixelController(const CRGB &data, int len, CRGB & s, EDitherMode dither = BINARY_DITHER) : mData((const uint8_t*)&data), mLen(len), mLenRemaining(len), mScale(s) {
             enable_dithering(dither);
             mAdvance = 0;
             initOffsets(len);
@@ -344,7 +344,7 @@ struct PixelController {
         template<int SLOT>  __attribute__((always_inline)) inline static uint8_t loadByte(PixelController & pc, int lane) { return pc.mData[pc.mOffsets[lane] + RO(SLOT)]; }
 
         template<int SLOT>  __attribute__((always_inline)) inline static uint8_t dither(PixelController & pc, uint8_t b) { return b ? qadd8(b, pc.d[RO(SLOT)]) : 0; }
-        template<int SLOT>  __attribute__((always_inline)) inline static uint8_t dither(PixelController & , uint8_t b, uint8_t d) { return b ? qadd8(b,d) : 0; }
+        template<int SLOT>  __attribute__((always_inline)) inline static uint8_t dither(PixelController & , uint8_t b, uint8_t di) { return b ? qadd8(b,di) : 0; }
 
         template<int SLOT>  __attribute__((always_inline)) inline static uint8_t scale(PixelController & pc, uint8_t b) { return scale8(b, pc.mScale.raw[RO(SLOT)]); }
         template<int SLOT>  __attribute__((always_inline)) inline static uint8_t scale(PixelController & , uint8_t b, uint8_t scale) { return scale8(b, scale); }
@@ -352,7 +352,7 @@ struct PixelController {
         // composite shortcut functions for loading, dithering, and scaling
         template<int SLOT>  __attribute__((always_inline)) inline static uint8_t loadAndScale(PixelController & pc) { return scale<SLOT>(pc, pc.dither<SLOT>(pc, pc.loadByte<SLOT>(pc))); }
         template<int SLOT>  __attribute__((always_inline)) inline static uint8_t loadAndScale(PixelController & pc, int lane) { return scale<SLOT>(pc, pc.dither<SLOT>(pc, pc.loadByte<SLOT>(pc, lane))); }
-        template<int SLOT>  __attribute__((always_inline)) inline static uint8_t loadAndScale(PixelController & pc, int lane, uint8_t d, uint8_t scale) { return scale8(pc.dither<SLOT>(pc, pc.loadByte<SLOT>(pc, lane), d), scale); }
+        template<int SLOT>  __attribute__((always_inline)) inline static uint8_t loadAndScale(PixelController & pc, int lane, uint8_t di, uint8_t scale) { return scale8(pc.dither<SLOT>(pc, pc.loadByte<SLOT>(pc, lane), di), scale); }
         template<int SLOT>  __attribute__((always_inline)) inline static uint8_t loadAndScale(PixelController & pc, int lane, uint8_t scale) { return scale8(pc.loadByte<SLOT>(pc, lane), scale); }
 
         template<int SLOT>  __attribute__((always_inline)) inline static uint8_t advanceAndLoadAndScale(PixelController & pc) { pc.advanceData(); return pc.loadAndScale<SLOT>(pc); }

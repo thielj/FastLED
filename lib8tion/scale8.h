@@ -84,6 +84,8 @@ LIB8STATIC_ALWAYS_INLINE uint8_t scale8( uint8_t i, fract8 scale)
     /* Return the result */
     return i;
 #endif
+#elif __STM8__
+    return _stm8_scale8( i, scale);
 #else
 #error "No implementation for scale8 available."
 #endif
@@ -134,6 +136,8 @@ LIB8STATIC_ALWAYS_INLINE uint8_t scale8_video( uint8_t i, fract8 scale)
 
     // // Return the result
     // return i;
+#elif __STM8__
+    return _stm8_scale8_video( i, scale);
 #else
 #error "No implementation for scale8_video available."
 #endif
@@ -177,6 +181,8 @@ LIB8STATIC_ALWAYS_INLINE uint8_t scale8_LEAVING_R1_DIRTY( uint8_t i, fract8 scal
 
     // Return the result
     return i;
+#elif __STM8__
+    return _stm8_scale8( i, scale);
 #else
 #error "No implementation for scale8_LEAVING_R1_DIRTY available."
 #endif
@@ -218,6 +224,8 @@ LIB8STATIC_ALWAYS_INLINE void nscale8_LEAVING_R1_DIRTY( uint8_t& i, fract8 scale
          : "+a" (i)      /* writes to i */
          : "a"  (scale)  /* uses scale */
          : "r0", "r1"    /* clobbers r0, r1 */ );
+#elif __STM8__
+    _stm8_nscale8( i, scale);
 #else
 #error "No implementation for nscale8_LEAVING_R1_DIRTY available."
 #endif
@@ -265,6 +273,8 @@ LIB8STATIC_ALWAYS_INLINE uint8_t scale8_video_LEAVING_R1_DIRTY( uint8_t i, fract
 
     // // Return the result
     // return i;
+#elif __STM8__
+    return _stm8_scale8_video( i, scale);
 #else
 #error "No implementation for scale8_video_LEAVING_R1_DIRTY available."
 #endif
@@ -290,6 +300,8 @@ LIB8STATIC_ALWAYS_INLINE void nscale8_video_LEAVING_R1_DIRTY( uint8_t & i, fract
         : [i] "+a" (i)
         : [scale] "a" (scale)
         : "r0", "r1");
+#elif __STM8__
+    _stm8_nscale8_video( i, scale);
 #else
 #error "No implementation for scale8_video_LEAVING_R1_DIRTY available."
 #endif
@@ -329,9 +341,24 @@ LIB8STATIC void nscale8x3( uint8_t& r, uint8_t& g, uint8_t& b, fract8 scale)
     g = scale8_LEAVING_R1_DIRTY(g, scale);
     b = scale8_LEAVING_R1_DIRTY(b, scale);
     cleanup_R1();
+#elif __STM8__ // TODO
+    //r = _STM8_SCALE8(r, scale)
+    _stm8_nscale8(r, scale);
+    _stm8_nscale8(g, scale);
+    _stm8_nscale8(b, scale);
 #else
 #error "No implementation for nscale8x3 available."
 #endif
+}
+
+/// scale three one byte values by three fractions
+///         THIS FUNCTION ALWAYS MODIFIES ITS ARGUMENTS IN PLACE
+LIB8STATIC void nscale8x3x3( uint8_t* i, const fract8* scale)
+{
+    nscale8_LEAVING_R1_DIRTY(i[0], scale[0]);
+    nscale8_LEAVING_R1_DIRTY(i[1], scale[1]);
+    nscale8_LEAVING_R1_DIRTY(i[2], scale[2]);
+    cleanup_R1();
 }
 
 /// scale three one byte values by a fourth one, which is treated as
@@ -353,6 +380,10 @@ LIB8STATIC void nscale8x3_video( uint8_t& r, uint8_t& g, uint8_t& b, fract8 scal
     nscale8_video_LEAVING_R1_DIRTY( g, scale);
     nscale8_video_LEAVING_R1_DIRTY( b, scale);
     cleanup_R1();
+#elif __STM8__ // TODO
+    _stm8_nscale8_video(r, scale);
+    _stm8_nscale8_video(g, scale);
+    _stm8_nscale8_video(b, scale);
 #else
 #error "No implementation for nscale8x3 available."
 #endif
@@ -379,6 +410,9 @@ LIB8STATIC void nscale8x2( uint8_t& i, uint8_t& j, fract8 scale)
     i = scale8_LEAVING_R1_DIRTY(i, scale);
     j = scale8_LEAVING_R1_DIRTY(j, scale);
     cleanup_R1();
+#elif __STM8__
+    _stm8_nscale8(i, scale);
+    _stm8_nscale8(j, scale);
 #else
 #error "No implementation for nscale8x2 available."
 #endif
@@ -403,6 +437,9 @@ LIB8STATIC void nscale8x2_video( uint8_t& i, uint8_t& j, fract8 scale)
     nscale8_video_LEAVING_R1_DIRTY( i, scale);
     nscale8_video_LEAVING_R1_DIRTY( j, scale);
     cleanup_R1();
+#elif __STM8__
+    _stm8_nscale8_video(i, scale);
+    _stm8_nscale8_video(j, scale);
 #else
 #error "No implementation for nscale8x2 available."
 #endif

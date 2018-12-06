@@ -17,7 +17,8 @@ struct CHSV;
 
 /// Forward declaration of hsv2rgb_rainbow here,
 /// to avoid circular dependencies.
-extern void hsv2rgb_rainbow( const CHSV& hsv, CRGB& rgb);
+inline void hsv2rgb_rainbow( const CHSV& hsv, CRGB& rgb);
+//extern CRGB hsv2rgb_rainbow( const CHSV& hsv);
 
 /// Representation of an HSV pixel (hue, saturation, value (aka brightness)).
 struct CHSV {
@@ -119,7 +120,7 @@ struct CRGB {
     }
 
     // default values are UNINITIALIZED
-	inline CRGB() __attribute__((always_inline))
+    inline CRGB() __attribute__((always_inline))
     {
     }
 
@@ -152,23 +153,29 @@ struct CRGB {
     /// allow copy construction
 	inline CRGB(const CRGB& rhs) __attribute__((always_inline))
     {
-        r = rhs.r;
-        g = rhs.g;
-        b = rhs.b;
+      *this = rhs;
     }
 
     /// allow construction from HSV color
-	inline CRGB(const CHSV& rhs) __attribute__((always_inline))
+    inline CRGB(const CHSV& rhs) __attribute__((always_inline))
     {
-        hsv2rgb_rainbow( rhs, *this);
+        *this = rhs;
     }
 
-    /// allow assignment from one RGB struct to another
-	inline CRGB& operator= (const CRGB& rhs) __attribute__((always_inline))
+    ALWAYS_INLINE
+    OPTIMIZE_SPEED
+    inline CRGB& operator= (const CRGB& rhs)
     {
-        r = rhs.r;
-        g = rhs.g;
-        b = rhs.b;
+        raw[0] = rhs.raw[0];
+        raw[1] = rhs.raw[1];
+        raw[2] = rhs.raw[2];
+
+        //STM8: The IAR compiler generates horrible code, but it's still
+        //faster than disabling inlining
+        //asm(" LD A, (Y)     \n LD (X), A     \n"
+        //    " LD A, (s:1,Y) \n LD (s:1,X), A \n"
+        //    " LD A, (s:2,Y) \n LD (s:2,X), A \n");
+
         return *this;
     }
 
@@ -181,8 +188,20 @@ struct CRGB {
         return *this;
     }
 
+    __attribute__((always_inline))
+    inline void zero()
+    {
+#ifndef __STM8__
+      raw[0] = 0; raw[1] = 0; raw[2] = 0;
+#else
+      uint8_t* p = &(raw[0]);
+      *p++=0;*p++=0;*p=0;
+      //asm(" CLR (X) \n CLR (s:1,X) \n CLR (s:2,X) \n");
+#endif
+    }
+
     /// allow assignment from R, G, and B
-	inline CRGB& setRGB (uint8_t nr, uint8_t ng, uint8_t nb) __attribute__((always_inline))
+    inline CRGB& setRGB (uint8_t nr, uint8_t ng, uint8_t nb) __attribute__((always_inline))
     {
         r = nr;
         g = ng;
@@ -193,19 +212,19 @@ struct CRGB {
     /// allow assignment from H, S, and V
 	inline CRGB& setHSV (uint8_t hue, uint8_t sat, uint8_t val) __attribute__((always_inline))
     {
-        hsv2rgb_rainbow( CHSV(hue, sat, val), *this);
+        *this = CHSV(hue, sat, val);
         return *this;
     }
 
     /// allow assignment from just a Hue, saturation and value automatically at max.
 	inline CRGB& setHue (uint8_t hue) __attribute__((always_inline))
     {
-        hsv2rgb_rainbow( CHSV(hue, 255, 255), *this);
+        *this = CHSV(hue, 255, 255);
         return *this;
     }
 
     /// allow assignment from HSV color
-	inline CRGB& operator= (const CHSV& rhs) __attribute__((always_inline))
+    inline CRGB& operator= (const CHSV& rhs)
     {
         hsv2rgb_rainbow( rhs, *this);
         return *this;
@@ -220,6 +239,7 @@ struct CRGB {
         return *this;
     }
 
+    ////////////////////////////////////////////////////////////////////////////
 
     /// add one RGB to another, saturating at 0xFF for each channel
     inline CRGB& operator+= (const CRGB& rhs )
@@ -240,6 +260,19 @@ struct CRGB {
         g = qadd8( g, d);
         b = qadd8( b, d);
         return *this;
+    }
+
+    inline CRGB& addRaw (uint8_t d )
+    {
+#ifndef __STM8__
+      raw[0] += d;
+      raw[1] += d;
+      raw[2] += d;
+#else
+      uint8_t* p = &(raw[0]);
+      *p++ += d; *p++ += d; *p++ += d;
+#endif
+      return *this;
     }
 
     /// subtract one RGB from another, saturating at 0x00 for each channel
@@ -326,62 +359,82 @@ struct CRGB {
     /// each channel is guaranteed NOT to dim down to zero.  If it's already
     /// nonzero, it'll stay nonzero, even if that means the hue shifts a little
     /// at low brightness levels.
-    inline CRGB& nscale8_video (uint8_t scaledown )
+    ALWAYS_INLINE
+    inline CRGB& nscale8_video (fract8 scaledown )
     {
-        nscale8x3_video( r, g, b, scaledown);
+#if __STM8__
+      _stm8_nscale8x3_video( raw, scaledown);
+#else
+      nscale8x3_video( r, g, b, scaledown);
+#endif
         return *this;
     }
 
     /// %= is a synonym for nscale8_video.  Think of it is scaling down
     /// by "a percentage"
-    inline CRGB& operator%= (uint8_t scaledown )
+    ALWAYS_INLINE
+    inline CRGB& operator%= (fract8 scaledown )
     {
-        nscale8x3_video( r, g, b, scaledown);
-        return *this;
+        return nscale8_video( scaledown);
     }
 
     /// fadeLightBy is a synonym for nscale8_video( ..., 255-fadefactor)
-    inline CRGB& fadeLightBy (uint8_t fadefactor )
+    ALWAYS_INLINE
+    inline CRGB& fadeLightBy (fract8 fadefactor )
     {
-        nscale8x3_video( r, g, b, 255 - fadefactor);
-        return *this;
+        return nscale8_video( 255 - fadefactor);
     }
 
     /// scale down a RGB to N 256ths of it's current brightness, using
     /// 'plain math' dimming rules, which means that if the low light levels
     /// may dim all the way to 100% black.
-    inline CRGB& nscale8 (uint8_t scaledown )
+    ALWAYS_INLINE
+    inline CRGB& nscale8 (fract8 scaledown )
     {
+#if __STM8__
+        _stm8_nscale8x3( raw, scaledown);
+#else
         nscale8x3( r, g, b, scaledown);
+#endif
         return *this;
     }
 
     /// scale down a RGB to N 256ths of it's current brightness, using
     /// 'plain math' dimming rules, which means that if the low light levels
     /// may dim all the way to 100% black.
-    inline CRGB& nscale8 (const CRGB & scaledown )
+    ALWAYS_INLINE
+    inline CRGB& nscale8 (const CRGB & fract8 )
     {
-        r = ::scale8(r, scaledown.r);
-        g = ::scale8(g, scaledown.g);
-        b = ::scale8(b, scaledown.b);
-        return *this;
+      nscale8x3x3(raw, fract8.raw);
+      return *this;
     }
 
     /// return a CRGB object that is a scaled down version of this object
+    ALWAYS_INLINE
+    inline CRGB scale8 (fract8 scaledown ) const
+    {
+      CRGB out(*this);
+#if __STM8__
+      _stm8_nscale8x3( out.raw, scaledown);
+#else
+      nscale8x3( out.r, out.g, out.b, scaledown);
+#endif
+      return out;
+    }
+
+    /// return a CRGB object that is a scaled down version of this object
+    ALWAYS_INLINE
     inline CRGB scale8 (const CRGB & scaledown ) const
     {
-        CRGB out;
-        out.r = ::scale8(r, scaledown.r);
-        out.g = ::scale8(g, scaledown.g);
-        out.b = ::scale8(b, scaledown.b);
-        return out;
+        CRGB out(*this);
+        return out.nscale8(scaledown);
     }
 
     /// fadeToBlackBy is a synonym for nscale8( ..., 255-fadefactor)
-    inline CRGB& fadeToBlackBy (uint8_t fadefactor )
+    ALWAYS_INLINE
+    inline CRGB& fadeToBlackBy (fract8 fadefactor )
     {
-        nscale8x3( r, g, b, 255 - fadefactor);
-        return *this;
+        return nscale8( 255 - fadefactor);
     }
 
     /// "or" operator brings each channel up to the higher of the two values
@@ -446,9 +499,19 @@ struct CRGB {
     }
 #endif
 
+    ALWAYS_INLINE
+    inline uint16_t sum() const {
+      return raw[0] + raw[1] + raw[2];
+    }
+
     /// Get the 'luma' of a CRGB object - aka roughly how much light the
     /// CRGB pixel is putting out (from 0 to 255).
     inline uint8_t getLuma ( )  const {
+#ifdef _STM8_
+      CRGB luma(54, 183, 18);
+      static_assert( luma.sum() == 255 );
+      return (uint8_t) scale8(luma).sum();
+#else
         //Y' = 0.2126 R' + 0.7152 G' + 0.0722 B'
         //     54            183       18 (!)
 
@@ -457,6 +520,7 @@ struct CRGB {
         scale8_LEAVING_R1_DIRTY( b, 18);
         cleanup_R1();
         return luma;
+#endif
     }
 
     /// Get the average of the R, G, and B values
@@ -466,11 +530,15 @@ struct CRGB {
 #else
         const uint8_t eightyfive = 86;
 #endif
+#ifdef _STM8_
+        return (uint8_t) scale8( eightyfive ).sum();
+#else
         uint8_t avg = scale8_LEAVING_R1_DIRTY( r, eightyfive) + \
         scale8_LEAVING_R1_DIRTY( g, eightyfive) + \
         scale8_LEAVING_R1_DIRTY( b, eightyfive);
         cleanup_R1();
         return avg;
+#endif
     }
 
     /// maximize the brightness of this CRGB object
@@ -478,10 +546,10 @@ struct CRGB {
         uint8_t max = red;
         if( green > max) max = green;
         if( blue > max) max = blue;
-        uint16_t factor = ((uint16_t)(limit) * 256) / max;
-        red =   (red   * factor) / 256;
-        green = (green * factor) / 256;
-        blue =  (blue  * factor) / 256;
+        uint16_t factor = ((uint16_t)(limit) << 8) / max;
+        red =   (red   * factor) >> 8;
+        green = (green * factor) >> 8;
+        blue =  (blue  * factor) >> 8;
     }
 
     /// return a new CRGB object after performing a linear interpolation between this object and the passed in object
@@ -748,6 +816,8 @@ struct CRGB {
     } HTMLColorCode;
 };
 
+////////////////////////////////////////////////////////////////////////////
+// EQUALITY
 
 inline __attribute__((always_inline)) bool operator== (const CRGB& lhs, const CRGB& rhs)
 {
@@ -759,36 +829,28 @@ inline __attribute__((always_inline)) bool operator!= (const CRGB& lhs, const CR
     return !(lhs == rhs);
 }
 
+////////////////////////////////////////////////////////////////////////////
+// ORDERING
+// NOTE: with the current ordering, ( a<=b && a>=b ) =!=> a==b
+
 inline __attribute__((always_inline)) bool operator< (const CRGB& lhs, const CRGB& rhs)
 {
-    uint16_t sl, sr;
-    sl = lhs.r + lhs.g + lhs.b;
-    sr = rhs.r + rhs.g + rhs.b;
-    return sl < sr;
+    return lhs.sum() < rhs.sum();
 }
 
 inline __attribute__((always_inline)) bool operator> (const CRGB& lhs, const CRGB& rhs)
 {
-    uint16_t sl, sr;
-    sl = lhs.r + lhs.g + lhs.b;
-    sr = rhs.r + rhs.g + rhs.b;
-    return sl > sr;
+    return lhs.sum() > rhs.sum();
 }
 
 inline __attribute__((always_inline)) bool operator>= (const CRGB& lhs, const CRGB& rhs)
 {
-    uint16_t sl, sr;
-    sl = lhs.r + lhs.g + lhs.b;
-    sr = rhs.r + rhs.g + rhs.b;
-    return sl >= sr;
+    return !(lhs < rhs );
 }
 
 inline __attribute__((always_inline)) bool operator<= (const CRGB& lhs, const CRGB& rhs)
 {
-    uint16_t sl, sr;
-    sl = lhs.r + lhs.g + lhs.b;
-    sr = rhs.r + rhs.g + rhs.b;
-    return sl <= sr;
+    return !(lhs > rhs );
 }
 
 
@@ -840,11 +902,10 @@ inline CRGB operator|( const CRGB& p1, const CRGB& p2)
 }
 
 __attribute__((always_inline))
-inline CRGB operator%( const CRGB& p1, uint8_t d)
+inline CRGB operator%( const CRGB& p1, fract8 d)
 {
     CRGB retval( p1);
-    retval.nscale8_video( d);
-    return retval;
+    return retval.nscale8_video( d);
 }
 
 

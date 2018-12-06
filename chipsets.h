@@ -300,7 +300,7 @@ class P9813Controller : public CPixelLEDController<RGB_ORDER> {
 	void writeBoundary() { mSPI.writeWord(0); mSPI.writeWord(0); }
 
 	inline void writeLed(uint8_t r, uint8_t g, uint8_t b) __attribute__((always_inline)) {
-		register uint8_t top = 0xC0 | ((~b & 0xC0) >> 2) | ((~g & 0xC0) >> 4) | ((~r & 0xC0) >> 6);
+		register uint8_t top = 0xC0 | ((~(unsigned)b & 0xC0) >> 2) | ((~(unsigned)g & 0xC0) >> 4) | ((~(unsigned)r & 0xC0) >> 6);
 		mSPI.writeByte(top); mSPI.writeByte(b); mSPI.writeByte(g); mSPI.writeByte(r);
 	}
 

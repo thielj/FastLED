@@ -119,7 +119,8 @@ public:
 	#define CLOCK_LO_DELAY delaycycles<(((SPI_SPEED-6) / 4))>();
 
 	// write the BIT'th bit out via spi, setting the data pin then strobing the clcok
-	template <uint8_t BIT> __attribute__((always_inline, hot)) inline static void writeBit(uint8_t b) {
+        ALWAYS_INLINE HOT
+	template <uint8_t BIT> inline static void writeBit(uint8_t b) {
 		//cli();
 		if(b & (1 << BIT)) {
 			FastPin<DATA_PIN>::hi();
@@ -294,7 +295,8 @@ public:
 	// write a block of uint8_ts out in groups of three.  len is the total number of uint8_ts to write out.  The template
 	// parameters indicate how many uint8_ts to skip at the beginning of each grouping, as well as a class specifying a per
 	// byte of data modification to be made.  (See DATA_NOP above)
-	template <uint8_t FLAGS, class D, EOrder RGB_ORDER>  __attribute__((noinline)) void writePixels(PixelController<RGB_ORDER> pixels) {
+        NO_INLINE
+	template <uint8_t FLAGS, class D, EOrder RGB_ORDER>  void writePixels(PixelController<RGB_ORDER> pixels) {
 		select();
 		int len = pixels.mLen;
 

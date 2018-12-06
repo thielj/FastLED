@@ -1578,7 +1578,7 @@ void map_data_into_colors_through_palette(
 		if( opacity == 255 ) {
 			targetColorArray[i] = rgb;
 		} else {
-			targetColorArray[i].nscale8( 256 - opacity);
+			targetColorArray[i].nscale8( 256 - opacity);    // TODO: overflow for opacity == 0 ????
 			rgb.nscale8_video( opacity);
 			targetColorArray[i] += rgb;
 		}

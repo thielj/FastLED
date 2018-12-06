@@ -129,6 +129,9 @@ void hsv2rgb_raw_C (const struct CHSV & hsv, struct CRGB & rgb)
     uint8_t rampup_amp_adj   = (rampup   * color_amplitude) / (256 / 4);
     uint8_t rampdown_amp_adj = (rampdown * color_amplitude) / (256 / 4);
 
+    // TODO: Can't we just calculate rampdown_amp_adj from rampup_amp_adj
+    // by simply subtracting from 255?
+
     // add brightness_floor offset to everything
     uint8_t rampup_adj_with_floor   = rampup_amp_adj   + brightness_floor;
     uint8_t rampdown_adj_with_floor = rampdown_amp_adj + brightness_floor;
@@ -261,239 +264,233 @@ void hsv2rgb_spectrum( const CHSV& hsv, CRGB& rgb)
 }
 
 
-// Sometimes the compiler will do clever things to reduce
-// code size that result in a net slowdown, if it thinks that
-// a variable is not used in a certain location.
-// This macro does its best to convince the compiler that
-// the variable is used in this location, to help control
-// code motion and de-duplication that would result in a slowdown.
-#define FORCE_REFERENCE(var)  asm volatile( "" : : "r" (var) )
 
 
-#define K255 255
-#define K171 171
-#define K170 170
-#define K85  85
 
-void hsv2rgb_rainbow( const CHSV& hsv, CRGB& rgb)
-{
-    // Yellow has a higher inherent brightness than
-    // any other color; 'pure' yellow is perceived to
-    // be 93% as bright as white.  In order to make
-    // yellow appear the correct relative brightness,
-    // it has to be rendered brighter than all other
-    // colors.
-    // Level Y1 is a moderate boost, the default.
-    // Level Y2 is a strong boost.
-    const uint8_t Y1 = 1;
-    const uint8_t Y2 = 0;
-    
-    // G2: Whether to divide all greens by two.
-    // Depends GREATLY on your particular LEDs
-    const uint8_t G2 = 0;
-    
-    // Gscale: what to scale green down by.
-    // Depends GREATLY on your particular LEDs
-    const uint8_t Gscale = 0;
-    
-    
-    uint8_t hue = hsv.hue;
-    uint8_t sat = hsv.sat;
-    uint8_t val = hsv.val;
-    
-    uint8_t offset = hue & 0x1F; // 0..31
-    
-    // offset8 = offset * 8
-    uint8_t offset8 = offset;
-    {
+
+// TODO: Move this to AVR platform code
+
 #if defined(__AVR__)
-        // Left to its own devices, gcc turns "x <<= 3" into a loop
-        // It's much faster and smaller to just do three single-bit shifts
-        // So this business is to force that.
-        offset8 <<= 1;
-        asm volatile("");
-        offset8 <<= 1;
-        asm volatile("");
-        offset8 <<= 1;
-#else
-        // On ARM and other non-AVR platforms, we just shift 3.
-        offset8 <<= 3;
-#endif
-    }
-    
-    uint8_t third = scale8( offset8, (256 / 3)); // max = 85
-    
-    uint8_t r, g, b;
-    
-    if( ! (hue & 0x80) ) {
-        // 0XX
-        if( ! (hue & 0x40) ) {
-            // 00X
-            //section 0-1
-            if( ! (hue & 0x20) ) {
-                // 000
-                //case 0: // R -> O
-                r = K255 - third;
-                g = third;
-                b = 0;
-                FORCE_REFERENCE(b);
-            } else {
-                // 001
-                //case 1: // O -> Y
-                if( Y1 ) {
-                    r = K171;
-                    g = K85 + third ;
-                    b = 0;
-                    FORCE_REFERENCE(b);
-                }
-                if( Y2 ) {
-                    r = K170 + third;
-                    //uint8_t twothirds = (third << 1);
-                    uint8_t twothirds = scale8( offset8, ((256 * 2) / 3)); // max=170
-                    g = K85 + twothirds;
-                    b = 0;
-                    FORCE_REFERENCE(b);
-                }
-            }
-        } else {
-            //01X
-            // section 2-3
-            if( !  (hue & 0x20) ) {
-                // 010
-                //case 2: // Y -> G
-                if( Y1 ) {
-                    //uint8_t twothirds = (third << 1);
-                    uint8_t twothirds = scale8( offset8, ((256 * 2) / 3)); // max=170
-                    r = K171 - twothirds;
-                    g = K170 + third;
-                    b = 0;
-                    FORCE_REFERENCE(b);
-                }
-                if( Y2 ) {
-                    r = K255 - offset8;
-                    g = K255;
-                    b = 0;
-                    FORCE_REFERENCE(b);
-                }
-            } else {
-                // 011
-                // case 3: // G -> A
-                r = 0;
-                FORCE_REFERENCE(r);
-                g = K255 - third;
-                b = third;
-            }
-        }
-    } else {
-        // section 4-7
-        // 1XX
-        if( ! (hue & 0x40) ) {
-            // 10X
-            if( ! ( hue & 0x20) ) {
-                // 100
-                //case 4: // A -> B
-                r = 0;
-                FORCE_REFERENCE(r);
-                //uint8_t twothirds = (third << 1);
-                uint8_t twothirds = scale8( offset8, ((256 * 2) / 3)); // max=170
-                g = K171 - twothirds; //K170?
-                b = K85  + twothirds;
-                
-            } else {
-                // 101
-                //case 5: // B -> P
-                r = third;
-                g = 0;
-                FORCE_REFERENCE(g);
-                b = K255 - third;
-                
-            }
-        } else {
-            if( !  (hue & 0x20)  ) {
-                // 110
-                //case 6: // P -- K
-                r = K85 + third;
-                g = 0;
-                FORCE_REFERENCE(g);
-                b = K171 - third;
-                
-            } else {
-                // 111
-                //case 7: // K -> R
-                r = K170 + third;
-                g = 0;
-                FORCE_REFERENCE(g);
-                b = K85 - third;
-                
-            }
-        }
-    }
-    
-    // This is one of the good places to scale the green down,
-    // although the client can scale green down as well.
-    if( G2 ) g = g >> 1;
-    if( Gscale ) g = scale8_video_LEAVING_R1_DIRTY( g, Gscale);
-    
-    // Scale down colors if we're desaturated at all
-    // and add the brightness_floor to r, g, and b.
-    if( sat != 255 ) {
-        if( sat == 0) {
-            r = 255; b = 255; g = 255;
-        } else {
-            //nscale8x3_video( r, g, b, sat);
-#if (FASTLED_SCALE8_FIXED==1)
-            if( r ) r = scale8_LEAVING_R1_DIRTY( r, sat);
-            if( g ) g = scale8_LEAVING_R1_DIRTY( g, sat);
-            if( b ) b = scale8_LEAVING_R1_DIRTY( b, sat);
-#else
-            if( r ) r = scale8_LEAVING_R1_DIRTY( r, sat) + 1;
-            if( g ) g = scale8_LEAVING_R1_DIRTY( g, sat) + 1;
-            if( b ) b = scale8_LEAVING_R1_DIRTY( b, sat) + 1;
-#endif
-            cleanup_R1();
-            
-            uint8_t desat = 255 - sat;
-            desat = scale8( desat, desat);
-            
-            uint8_t brightness_floor = desat;
-            r += brightness_floor;
-            g += brightness_floor;
-            b += brightness_floor;
-        }
-    }
-    
-    // Now scale everything down if we're at value < 255.
-    if( val != 255 ) {
-        
-        val = scale8_video_LEAVING_R1_DIRTY( val, val);
-        if( val == 0 ) {
-            r=0; g=0; b=0;
-        } else {
-            // nscale8x3_video( r, g, b, val);
-#if (FASTLED_SCALE8_FIXED==1)
-            if( r ) r = scale8_LEAVING_R1_DIRTY( r, val);
-            if( g ) g = scale8_LEAVING_R1_DIRTY( g, val);
-            if( b ) b = scale8_LEAVING_R1_DIRTY( b, val);
-#else
-            if( r ) r = scale8_LEAVING_R1_DIRTY( r, val) + 1;
-            if( g ) g = scale8_LEAVING_R1_DIRTY( g, val) + 1;
-            if( b ) b = scale8_LEAVING_R1_DIRTY( b, val) + 1;
-#endif
-            cleanup_R1();
-        }
-    }
-    
-    // Here we have the old AVR "missing std X+n" problem again
-    // It turns out that fixing it winds up costing more than
-    // not fixing it.
-    // To paraphrase Dr Bronner, profile! profile! profile!
-    //asm volatile(  ""  :  :  : "r26", "r27" );
-    //asm volatile (" movw r30, r26 \n" : : : "r30", "r31");
-    rgb.r = r;
-    rgb.g = g;
-    rgb.b = b;
+// Left to its own devices, gcc turns "x <<= 3" into a loop
+// It's much faster and smaller to just do three single-bit shifts
+// So this business is to force that.
+CONST
+template <int BITS, typename UINT>
+ALWAYS_INLINE
+inline UINT shift_left(UINT a)
+{
+  UINT tmp = shift_left< (BITS-1) >(a);
+//  asm volatile("");
+  tmp <<= 1;
+  return tmp;
 }
 
+CONST
+template <>
+ALWAYS_INLINE
+inline uint8_t  shift_left<0, uint8_t >(uint8_t  a) { return a; }
+
+CONST
+template <>
+ALWAYS_INLINE
+inline uint16_t shift_left<0, uint16_t>(uint16_t a) { return a; }
+
+CONST
+template <>
+ALWAYS_INLINE
+inline uint32_t shift_left<0, uint32_t>(uint32_t a) { return a; }
+
+#define FASTLED_HAVE_SHIFT_LEFT shift_left
+
+CONST
+template <int BITS, typename UINT>
+ALWAYS_INLINE
+inline UINT shift_right(UINT a)
+{
+  UINT tmp = shift_right< (BITS-1) >(a);
+//  asm volatile("");
+  tmp <<= 1;
+  return tmp;
+}
+
+CONST
+template <>
+ALWAYS_INLINE
+inline uint8_t  shift_right<0, uint8_t >(uint8_t  a) { return a; }
+
+CONST
+template <>
+ALWAYS_INLINE
+inline uint16_t shift_right<0, uint16_t>(uint16_t a) { return a; }
+
+CONST
+template <>
+ALWAYS_INLINE
+inline uint32_t shift_right<0, uint32_t>(uint32_t a) { return a; }
+
+#define FASTLED_HAVE_SHIFT_RIGHT shift_right
+
+#endif // defined(__AVR__)
+
+
+
+
+
+
+
+
+
+
+
+#ifndef FASTLED_HAVE_HSV2RGB_RAINBOW
+
+// See: https://user-images.githubusercontent.com/2461547/31694367-b9010528-b358-11e7-819a-b65a3ac14c2f.jpg
+//
+//  0       2       4       6       8       A       C       E       0
+//  0       0       0       0       0       0       0       0       0
+//  -----------------------------------------------------------------
+//  R       O       Y       G       A       B       P       P       R
+//  E       R       E       R       Q       L       U       I       E
+//  D       A       L       E       U       U       R       N       D
+//          N       L       E       A       E       P       K
+//          G       O       N                       L
+//          E       W                               E
+//  |=======|=======|=======|=======|=======|=======|=======|=======|
+//  R               |       G       |       B       |               R
+//  |  R    |       |    G    G     |     B    B    |       |    R  |
+//  |     R         | G     |    G  |    B       B  |          R    |
+//  - - - - RRRRRRRRG - - - - - - - G - B - - - - - B - - - R - - - -
+//  |             G  R              | GB            |  B  R         |
+//  |          G    |  R            |B G            |  R  B         |
+//  - - - - G - - - - - R - - - - - B - G - - - - - R - - - B - - - -
+//  |    G          |    R       B  |    G       R  |          B    |
+//  | G     |       |      R  B     |      G  R     |       |     B |
+//  GBBBBBBBBBBBBBBBBBBBBBBBBRRRRRRRRRRRRRRRGGGGGGGGGGGGGGGGGGGGGGGGB
+//  |=======|=======|=======|=======|=======|=======|=======|=======|
+
+// Yellow has a higher inherent brightness than any other color; 'pure' yellow
+// is perceived to be 93% as bright as white.  In order to make yellow appear
+// the correct relative brightness, it has to be rendered brighter than all
+// other colors.
+//    YB=1 is a moderate boost, the default, as documented
+//    YB=2 is a strong boost.
+template< uint8_t YB = 1>
+inline CRGB hue2rgb_rainbow( uint8_t hue )
+{
+    // The first 3 bit of hue determine the section
+    // 000    001      010       011      100     101    110       111
+    // Red -> Orange > Yellow -> Green -> Aqua -> Blue > Purple -> pinK -> Red
+    //
+    // The last 5 bits are used to interpolate between the two colors
+    // For this, we re-map the values 0..31 to 0..255, i.e. looking at bits:
+    //
+    //   hue = ...abcde => offset8 = abcdeabc
+
+    const uint8_t offset = hue & 0x1F; // 0..31
+#if defined(HAVE_SHIFT_LEFT) && defined(HAVE_SHIFT_RIGHT)
+    const uint8_t offset8 = shift_left<3>( offset ) | shift_right<2>( offset );
+#else
+    const uint8_t offset8 = (offset << 3) | (offset >> 2);
+#endif
+
+    const uint8_t third = scale8( offset8, (256 / 3));   // max = 85
+    // twothirds             = offset8 - third;          // max = 170
+    // 255 - third           = ~third;
+    // 255 - offset8         = ~offset8;
+    // 170 + third           = ~(85 - third);
+    // 170 - third           = ~(85 + third);
+    // 170 + third - offset8 = ~(85 - third + offset8);
+
+    if( ! (hue & 0x80) ) {
+        if( ! (hue & 0x40) ) {
+            if( ! (hue & 0x20) ) // 000 / case 0 / Red (255, 0, 0) -> Orange (170, 85, 0)
+                return CRGB( ~(unsigned)third, third, 0);
+                                 // 001 / case 1 / Orange (170, 85, 0) -> Yellow (r, g, 0)
+            if( YB == 1)
+                return CRGB( 170, 85 + third, 0);
+            else {
+                const uint8_t t = 170 + third;
+                return CRGB( t, ~(unsigned)t + offset8, 0);
+            }
+        }
+        if( ! (hue & 0x20) ) {   // 010 / case 2 / Yellow ( r, g, 0) -> Green (0, 255, 0)
+            if( YB == 1) {
+                const uint8_t t = 170 + third;
+                return CRGB( t - offset8, t, 0);
+            } else
+                return CRGB( ~(unsigned)offset8, 255, 0);
+        }
+                                 // 011 / case 3 / Green (0, 255, 0) -> Aqua (0, 170, 85)
+        return CRGB( 0, ~(unsigned)third, third);
+    }
+    if( ! (hue & 0x40) ) {
+        if( ! ( hue & 0x20) ) {  // 100 / case 4 / Aqua (0, 170, 85) -> Blue (0, 0, 255)
+            const uint8_t t = 170 + third - offset8;
+            return CRGB( 0, t, ~(unsigned)t);
+        } else                   // 101 / case 5 / Blue (0, 0, 255) -> Purple (85, 0, 170)
+            return CRGB( third, 0, ~(unsigned)third);
+    }
+    if( ! (hue & 0x20) ) {       // 110 / case 6 / Purple (85, 0, 170) -> Pink (170, 0, 85)
+        const uint8_t t = 85 + third;
+        return CRGB( t, 0, ~(unsigned)t);
+    } else {                     // 111 / case 7 / Pink (170, 0, 85) -> Red (255, 0, 0)
+        const uint8_t t = 170 + third;
+        return CRGB( t, 0, ~(unsigned)t);
+    }
+}
+
+
+
+
+
+// Yellow has a higher inherent brightness than any other color; 'pure' yellow
+// is perceived to be 93% as bright as white.  In order to make yellow appear
+// the correct relative brightness, it has to be rendered brighter than all
+// other colors.
+//    YB=1 is a moderate boost, the default.
+//    YB=2 is a strong boost.
+// To scale green down, provide a scale (in GS/256th).
+//    GS=0..255, 128 is optimized for speed; default is GS=256, i.e. no scaling
+template< uint8_t YB, uint16_t GS>
+inline CRGB hsv2rgb_rainbow( const CHSV& hsv)
+{
+    static_assert( GS <= 256, "Invalid hsv2rgb_rainbow parameters" );
+
+    CRGB rgb = hue2rgb_rainbow< YB >( hsv.hue);
+
+    // This is one of the good places to scale the green down,
+    // although the client can scale green down as well.
+    if( GS == 128 ) rgb.g >>= 1;
+    else if( GS < 256 ) rgb.g = scale8_video( rgb.g, (uint8_t)GS);
+
+    // Scale down colors if we're desaturated at all
+    // and add the brightness_floor to r, g, and b.
+
+    if( hsv.sat == 0) {
+      rgb = CRGB::White;
+    } else if( hsv.sat != 255 ) {
+      const uint8_t brightness_floor = dim8_raw( ~(unsigned)hsv.sat);
+      rgb.nscale8( hsv.sat).addRaw( brightness_floor );
+    }
+
+    // Now scale everything down if we're at value < 255.
+
+    if( hsv.val == 0 ) {
+        rgb.zero(); //rgb.setRGB( 0, 0, 0);
+    } else if( hsv.val != 255 ) {
+        rgb.nscale8( dim8_raw( hsv.val) );
+    }
+
+    return rgb;
+}
+
+template< uint8_t YB = 1, uint16_t GS = 256>
+void hsv2rgb_rainbow( const struct CHSV& hsv, struct CRGB& rgb)
+{
+  rgb = hsv2rgb_rainbow<YB,GS>( hsv);
+}
+
+#endif // FASTLED_HAVE_HSV2RGB_RAINBOW
 
 void hsv2rgb_raw(const struct CHSV * phsv, struct CRGB * prgb, int numLeds) {
     for(int i = 0; i < numLeds; i++) {

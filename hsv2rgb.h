@@ -14,8 +14,14 @@ FASTLED_NAMESPACE_BEGIN
 //                   than a straight 'spectrum'.
 //
 //                   NOTE: here hue is 0-255, not just 0-191
+template< uint8_t YB, uint16_t GS> // defaults: 1, 256
+void hsv2rgb_rainbow( const CHSV& hsv, CRGB& rgb);
 
-void hsv2rgb_rainbow( const struct CHSV& hsv, struct CRGB& rgb);
+ALWAYS_INLINE
+inline void hsv2rgb_rainbow( const CHSV& hsv, CRGB& rgb) {
+  hsv2rgb_rainbow<1,256>(hsv, rgb);
+}
+
 void hsv2rgb_rainbow( const struct CHSV* phsv, struct CRGB * prgb, int numLeds);
 #define HUE_MAX_RAINBOW 255
 
@@ -27,7 +33,7 @@ void hsv2rgb_rainbow( const struct CHSV* phsv, struct CRGB * prgb, int numLeds);
 //                    than a 'rainbow', and less yellow and orange.
 //
 //                    NOTE: here hue is 0-255, not just 0-191
-
+//                    Equivalent to hsv2rgb_raw, with hue scaled appropriately!
 void hsv2rgb_spectrum( const struct CHSV& hsv, struct CRGB& rgb);
 void hsv2rgb_spectrum( const struct CHSV* phsv, struct CRGB * prgb, int numLeds);
 #define HUE_MAX_SPECTRUM 255

@@ -319,7 +319,7 @@ CHSV& nblend( CHSV& existing, const CHSV& overlay, fract8 amountOfOverlay, TGrad
     }
     else /* directionCode == BACKWARD_HUES */
     {
-        huedelta8 = -huedelta8;
+        huedelta8 = 256 - huedelta8;
         existing.hue = existing.hue - scale8( huedelta8, amountOfOverlay);
     }
 

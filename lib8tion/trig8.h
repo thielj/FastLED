@@ -20,6 +20,8 @@
 #define sin16 sin16_C
 #endif
 
+#if defined(__AVR__)
+
 /// Fast 16-bit approximation of sin(x). This approximation never varies more than
 /// 0.69% from the floating point value you'd get by doing
 ///
@@ -77,6 +79,7 @@ LIB8STATIC int16_t sin16_avr( uint16_t theta )
 
     return y;
 }
+#endif // #if defined(__AVR__)
 
 /// Fast 16-bit approximation of sin(x). This approximation never varies more than
 /// 0.69% from the floating point value you'd get by doing
@@ -149,6 +152,8 @@ LIB8STATIC int16_t cos16( uint16_t theta)
 
 const uint8_t b_m16_interleave[] = { 0, 49, 49, 41, 90, 27, 117, 10 };
 
+#if defined(__AVR__)
+
 /// Fast 8-bit approximation of sin(x). This approximation never varies more than
 /// 2% from the floating point value you'd get by doing
 ///
@@ -205,6 +210,8 @@ LIB8STATIC uint8_t  sin8_avr( uint8_t theta)
 
     return y;
 }
+
+#endif // #if defined(__AVR__)
 
 
 /// Fast 8-bit approximation of sin(x). This approximation never varies more than
