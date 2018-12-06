@@ -523,27 +523,27 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
     uint8_t g = rgb.g;
     uint8_t b = rgb.b;
     uint8_t h, s, v;
-    
+
     // find desaturation
     uint8_t desat = 255;
     if( r < desat) desat = r;
     if( g < desat) desat = g;
     if( b < desat) desat = b;
-    
+
     // remove saturation from all channels
     r -= desat;
     g -= desat;
     b -= desat;
-    
+
     //Serial.print("desat="); Serial.print(desat); Serial.println("");
-    
+
     //uint8_t orig_desat = sqrt16( desat * 256);
     //Serial.print("orig_desat="); Serial.print(orig_desat); Serial.println("");
-    
+
     // saturation is opposite of desaturation
     s = ~(unsigned)desat;
     //Serial.print("s.1="); Serial.print(s); Serial.println("");
-    
+
     if( s != 255 ) {
         // undo 'dimming' of saturation
         s = ~(unsigned)sqrt16( (uint8_t)(~(unsigned)s) << 8 );
@@ -551,8 +551,8 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
     // without lib8tion: float ... ew ... sqrt... double ew, or rather, ew ^ 0.5
     // if( s != 255 ) s = (255 - (256.0 * sqrt( (float)(255-s) / 256.0)));
     //Serial.print("s.2="); Serial.print(s); Serial.println("");
-    
-    
+
+
     // at least one channel is now zero
     // if all three channels are zero, we had a
     // shade of gray.
@@ -560,7 +560,7 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
         // we pick hue zero for no special reason
         return CHSV( 0, 0, ~(unsigned)s);
     }
-    
+
     // scale all channels up to compensate for desaturation
     if( s < 255) {
         if( s == 0) s = 1;
@@ -572,11 +572,11 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
     //Serial.print("r.2="); Serial.print(r); Serial.println("");
     //Serial.print("g.2="); Serial.print(g); Serial.println("");
     //Serial.print("b.2="); Serial.print(b); Serial.println("");
-    
+
     uint16_t total = r + g + b;
-    
+
     //Serial.print("total="); Serial.print(total); Serial.println("");
-    
+
     // scale all channels up to compensate for low values
     if( total < 255) {
         if( total == 0) total = 1;
@@ -588,7 +588,7 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
     //Serial.print("r.3="); Serial.print(r); Serial.println("");
     //Serial.print("g.3="); Serial.print(g); Serial.println("");
     //Serial.print("b.3="); Serial.print(b); Serial.println("");
-    
+
     if( total > 255 ) {
         v = 255;
     } else {
@@ -597,14 +597,14 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
         if( v != 255) v = sqrt16( v << 8 );
         // without lib8tion: float ... ew ... sqrt... double ew, or rather, ew ^ 0.5
         // if( v != 255) v = (256.0 * sqrt( (float)(v) / 256.0));
-        
+
     }
-    
+
     //Serial.print("v="); Serial.print(v); Serial.println("");
-    
-    
+
+
 #if 0
-    
+
     //#else
     if( v != 255) {
         // this part could probably use refinement/rethinking,
@@ -620,21 +620,21 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
         }
     }
 #endif
-    
+
     //Serial.print("s.3="); Serial.print(s); Serial.println("");
-    
-    
+
+
     // since this wasn't a pure shade of gray,
     // the interesting question is what hue is it
-    
-    
-    
+
+
+
     // start with which channel is highest
     // (ties don't matter)
     uint8_t highest = r;
     if( g > highest) highest = g;
     if( b > highest) highest = b;
-    
+
     if( highest == r ) {
         // Red is highest.
         // Hue could be Purple/Pink-Red,Red-Orange,Orange-Yellow
@@ -651,7 +651,7 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
             h = HUE_ORANGE;
             h += scale8( qsub8((g - 85) + (171 - r), 4), FIXFRAC8(32,85)); //221
         }
-        
+
     } else if ( highest == g) {
         // Green is highest
         // Hue could be Yellow-Green, Green-Aqua
@@ -677,7 +677,7 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
                 h += scale8( qsub8(b, 85), FIXFRAC8(8,42));
             }
         }
-        
+
     } else /* highest == b */ {
         // Blue is highest
         // Hue could be Aqua/Blue-Blue, Blue-Purple, Purple-Pink
@@ -695,7 +695,7 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
             h += scale8( qsub8(r, 85), FIXFRAC8(32,85));
         }
     }
-    
+
     h += 1;
     return CHSV( h, s, v);
 }
