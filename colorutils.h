@@ -192,7 +192,7 @@ void fill_gradient( T* targetArray, uint16_t numLeds,
 					const CHSV& c1, const CHSV& c2, const CHSV& c3,
 					TGradientDirectionCode directionCode = SHORTEST_HUES )
 {
-    uint16_t half = (numLeds / 2);
+    uint16_t half = numLeds >> 1;
     uint16_t last = numLeds - 1;
     fill_gradient( targetArray,    0, c1, half, c2, directionCode);
     fill_gradient( targetArray, half, c2, last, c3, directionCode);
@@ -204,7 +204,7 @@ void fill_gradient( T* targetArray, uint16_t numLeds,
 					TGradientDirectionCode directionCode = SHORTEST_HUES )
 {
     uint16_t onethird = (numLeds / 3);
-    uint16_t twothirds = ((numLeds * 2) / 3);
+    uint16_t twothirds = numLeds - onethird; // ((numLeds * 2) / 3);
     uint16_t last = numLeds - 1;
     fill_gradient( targetArray,         0, c1,  onethird, c2, directionCode);
     fill_gradient( targetArray,  onethird, c2, twothirds, c3, directionCode);

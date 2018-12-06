@@ -444,23 +444,23 @@ LIB8STATIC uint8_t blend8( uint8_t a, uint8_t b, uint8_t amountOfB)
 #if BLEND8_C == 1
     uint16_t partial;
     uint8_t result;
-    
-    uint8_t amountOfA = 255 - amountOfB;
-    
+
+    uint8_t amountOfA = ~(unsigned)amountOfB;
+
     partial = (a * amountOfA);
 #if (FASTLED_SCALE8_FIXED == 1)
     partial += a;
     //partial = add8to16( a, partial);
 #endif
-    
+
     partial += (b * amountOfB);
 #if (FASTLED_SCALE8_FIXED == 1)
     partial += b;
     //partial = add8to16( b, partial);
 #endif
-    
+
     result = partial >> 8;
-    
+
     return result;
 
 #elif BLEND8_AVRASM == 1
@@ -516,7 +516,7 @@ LIB8STATIC uint8_t blend8( uint8_t a, uint8_t b, uint8_t amountOfB)
     // and can actually return results outside of the range
     // from a to b.  Its use is not recommended.
     uint8_t result;
-    uint8_t amountOfA = 255 - amountOfB;
+    uint8_t amountOfA = ~(unsigned)amountOfB;
     result = scale8_LEAVING_R1_DIRTY( a, amountOfA)
            + scale8_LEAVING_R1_DIRTY( b, amountOfB);
     cleanup_R1();

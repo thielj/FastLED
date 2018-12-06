@@ -32,29 +32,23 @@ void fill_solid( struct CHSV * targetArray, int numToFill,
 // {
 // 	fill_solid<CRGB>( targetArray, numToFill, (CRGB) hsvColor);
 // }
-
+NO_INLINE
 void fill_rainbow( struct CRGB * pFirstLED, int numToFill,
                   uint8_t initialhue,
                   uint8_t deltahue )
 {
-    CHSV hsv;
-    hsv.hue = initialhue;
-    hsv.val = 255;
-    hsv.sat = 240;
+    CHSV hsv( initialhue, 255, 240);
     for( int i = 0; i < numToFill; i++) {
         pFirstLED[i] = hsv;
         hsv.hue += deltahue;
     }
 }
-
+NO_INLINE
 void fill_rainbow( struct CHSV * targetArray, int numToFill,
                   uint8_t initialhue,
                   uint8_t deltahue )
 {
-    CHSV hsv;
-    hsv.hue = initialhue;
-    hsv.val = 255;
-    hsv.sat = 240;
+    CHSV hsv( initialhue, 255, 240);
     for( int i = 0; i < numToFill; i++) {
         targetArray[i] = hsv;
         hsv.hue += deltahue;
@@ -178,23 +172,23 @@ void nscale8_video( CRGB* leds, uint16_t num_leds, uint8_t scale)
 
 void fade_video(CRGB* leds, uint16_t num_leds, uint8_t fadeBy)
 {
-    nscale8_video( leds, num_leds, 255 - fadeBy);
+    nscale8_video( leds, num_leds, ~(unsigned)fadeBy);
 }
 
 void fadeLightBy(CRGB* leds, uint16_t num_leds, uint8_t fadeBy)
 {
-    nscale8_video( leds, num_leds, 255 - fadeBy);
+    nscale8_video( leds, num_leds, ~(unsigned)fadeBy);
 }
 
 
 void fadeToBlackBy( CRGB* leds, uint16_t num_leds, uint8_t fadeBy)
 {
-    nscale8( leds, num_leds, 255 - fadeBy);
+    nscale8( leds, num_leds, ~(unsigned)fadeBy);
 }
 
 void fade_raw( CRGB* leds, uint16_t num_leds, uint8_t fadeBy)
 {
-    nscale8( leds, num_leds, 255 - fadeBy);
+    nscale8( leds, num_leds, ~(unsigned)fadeBy);
 }
 
 void nscale8_raw( CRGB* leds, uint16_t num_leds, uint8_t scale)
@@ -237,7 +231,7 @@ CRGB& nblend( CRGB& existing, const CRGB& overlay, fract8 amountOfOverlay )
 
 #if 0
     // Old blend method which unfortunately had some rounding errors
-    fract8 amountOfKeep = 255 - amountOfOverlay;
+    fract8 amountOfKeep = ~(unsigned)amountOfOverlay;
 
     existing.red   = scale8_LEAVING_R1_DIRTY( existing.red,   amountOfKeep)
                     + scale8_LEAVING_R1_DIRTY( overlay.red,    amountOfOverlay);
@@ -296,7 +290,7 @@ CHSV& nblend( CHSV& existing, const CHSV& overlay, fract8 amountOfOverlay, TGrad
         return existing;
     }
 
-    fract8 amountOfKeep = 255 - amountOfOverlay;
+    fract8 amountOfKeep = ~(unsigned)amountOfOverlay;
 
     uint8_t huedelta8 = overlay.hue - existing.hue;
 
@@ -382,7 +376,7 @@ uint16_t XY( uint8_t, uint8_t);// __attribute__ ((weak));
 //         it can be used to (slowly) clear the LEDs to black.
 void blur1d( CRGB* leds, uint16_t numLeds, fract8 blur_amount)
 {
-    uint8_t keep = 255 - blur_amount;
+    uint8_t keep = ~(unsigned)blur_amount;
     uint8_t seep = blur_amount >> 1;
     CRGB carryover = CRGB::Black;
     for( uint16_t i = 0; i < numLeds; i++) {
@@ -416,7 +410,7 @@ void blurRows( CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
 void blurColumns(CRGB* leds, uint8_t width, uint8_t height, fract8 blur_amount)
 {
     // blur columns
-    uint8_t keep = 255 - blur_amount;
+    uint8_t keep = ~(unsigned)blur_amount;
     uint8_t seep = blur_amount >> 1;
     for( uint8_t col = 0; col < width; col++) {
         CRGB carryover = CRGB::Black;

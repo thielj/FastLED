@@ -225,7 +225,7 @@ LIB8STATIC uint8_t sin8_C( uint8_t theta)
 {
     uint8_t offset = theta;
     if( theta & 0x40 ) {
-        offset = (uint8_t)255 - offset;
+        offset = ~(unsigned)offset;
     }
     offset &= 0x3F; // 0..63
 

@@ -129,7 +129,7 @@ public:
   /// Scale down every led by the given scale
   inline CPixelView & operator%=(uint8_t scaledown) { for(iterator pixel = begin(), _end = end(); pixel != _end; ++pixel) { (*pixel).nscale8_video(scaledown); } return *this; }
   /// Fade every led down by the given scale
-  inline CPixelView & fadeLightBy(uint8_t fadefactor) { return nscale8_video(255 - fadefactor); }
+  inline CPixelView & fadeLightBy(uint8_t fadefactor) { return nscale8_video(~(unsigned)fadefactor); }
 
   /// Scale every led by the given scale
   inline CPixelView & nscale8(uint8_t scaledown) { for(iterator pixel = begin(), _end = end(); pixel != _end; ++pixel) { (*pixel).nscale8(scaledown); } return *this; }
@@ -139,7 +139,7 @@ public:
   inline CPixelView & nscale8(CPixelView & rhs) { for(iterator pixel = begin(), rhspixel = rhs.begin(), _end = end(), rhs_end = rhs.end(); (pixel != _end) && (rhspixel != rhs_end); ++pixel, ++rhspixel) { (*pixel).nscale8((*rhspixel)); } return *this; }
 
   /// Fade every led down by the given scale
-  inline CPixelView & fadeToBlackBy(uint8_t fade) { return nscale8(255 - fade); }
+  inline CPixelView & fadeToBlackBy(uint8_t fade) { return nscale8(~(unsigned)fade); }
 
   /// Apply the PIXEL_TYPE |= operator to every pixel in this set with the given PIXEL_TYPE value (bringing each channel to the higher of the two values)
   inline CPixelView & operator|=(const PIXEL_TYPE & rhs) { for(iterator pixel = begin(), _end = end(); pixel != _end; ++pixel) { (*pixel) |= rhs; } return *this; }

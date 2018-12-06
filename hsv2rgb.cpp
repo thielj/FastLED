@@ -80,7 +80,7 @@ void hsv2rgb_raw_C (const struct CHSV & hsv, struct CRGB & rgb)
 
     // The brightness floor is minimum number that all of
     // R, G, and B will be set to.
-    uint8_t invsat = APPLY_DIMMING( 255 - saturation);
+    uint8_t invsat = APPLY_DIMMING( ~(unsigned)saturation);
     uint8_t brightness_floor = (value * invsat) / 256;
 
     // The color amplitude is the maximum amount of R, G, and B
