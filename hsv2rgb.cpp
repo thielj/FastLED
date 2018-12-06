@@ -80,8 +80,8 @@ void hsv2rgb_raw_C (const struct CHSV & hsv, struct CRGB & rgb)
 
     // The brightness floor is minimum number that all of
     // R, G, and B will be set to.
-    uint8_t invsat = APPLY_DIMMING( 255 - saturation);
-    uint8_t brightness_floor = (value * invsat) / 256;
+    uint8_t invsat = APPLY_DIMMING( ~(unsigned)saturation);
+    uint8_t brightness_floor = (value * invsat) >> 8;
 
     // The color amplitude is the maximum amount of R, G, and B
     // that will be added on top of the brightness_floor to
@@ -280,7 +280,7 @@ ALWAYS_INLINE
 inline UINT shift_left(UINT a)
 {
   UINT tmp = shift_left< (BITS-1) >(a);
-//  asm volatile("");
+  PREVENT_OPTIMIZATION();
   tmp <<= 1;
   return tmp;
 }
@@ -308,7 +308,7 @@ ALWAYS_INLINE
 inline UINT shift_right(UINT a)
 {
   UINT tmp = shift_right< (BITS-1) >(a);
-//  asm volatile("");
+  PREVENT_OPTIMIZATION();
   tmp <<= 1;
   return tmp;
 }
@@ -541,12 +541,12 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
     //Serial.print("orig_desat="); Serial.print(orig_desat); Serial.println("");
     
     // saturation is opposite of desaturation
-    s = 255 - desat;
+    s = ~(unsigned)desat;
     //Serial.print("s.1="); Serial.print(s); Serial.println("");
     
     if( s != 255 ) {
         // undo 'dimming' of saturation
-        s = 255 - sqrt16( (255-s) * 256);
+        s = ~(unsigned)sqrt16( (uint8_t)(~(unsigned)s) << 8 );
     }
     // without lib8tion: float ... ew ... sqrt... double ew, or rather, ew ^ 0.5
     // if( s != 255 ) s = (255 - (256.0 * sqrt( (float)(255-s) / 256.0)));
@@ -558,7 +558,7 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
     // shade of gray.
     if( (r + g + b) == 0) {
         // we pick hue zero for no special reason
-        return CHSV( 0, 0, 255 - s);
+        return CHSV( 0, 0, ~(unsigned)s);
     }
     
     // scale all channels up to compensate for desaturation
@@ -594,7 +594,7 @@ CHSV rgb2hsv_approximate( const CRGB& rgb)
     } else {
         v = qadd8(desat,total);
         // undo 'dimming' of brightness
-        if( v != 255) v = sqrt16( v * 256);
+        if( v != 255) v = sqrt16( v << 8 );
         // without lib8tion: float ... ew ... sqrt... double ew, or rather, ew ^ 0.5
         // if( v != 255) v = (256.0 * sqrt( (float)(v) / 256.0));
         

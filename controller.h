@@ -52,13 +52,13 @@ protected:
     ///@param data the crgb color to set the leds to
     ///@param nLeds the numner of leds to set to this color
     ///@param scale the rgb scaling value for outputting color
-    virtual void showColor(const struct CRGB & data, int nLeds, CRGB scale) = 0;
+    virtual void showColor(const struct CRGB & data, int nLeds, CRGB scale = CRGB(255,255,255) ) = 0;
 
 	/// write the passed in rgb data out to the leds managed by this controller
 	///@param data the rgb data to write out to the strip
 	///@param nLeds the number of leds being written out
 	///@param scale the rgb scaling to apply to each led before writing it out
-    virtual void show(const struct CRGB *data, int nLeds, CRGB scale) = 0;
+    virtual void show(const struct CRGB *data, int nLeds, CRGB scale = CRGB(255,255,255) ) = 0;
 
 public:
 	/// create an led controller object, add it to the chain of controllers

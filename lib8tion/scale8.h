@@ -695,54 +695,39 @@ LIB8STATIC uint16_t scale16( uint16_t i, fract16 scale )
 ///@{
 
 /// Adjust a scaling value for dimming
-LIB8STATIC uint8_t dim8_raw( uint8_t x)
+LIB8STATIC_ALWAYS_INLINE uint8_t dim8_raw( uint8_t x)
 {
-    return scale8( x, x);
+  return scale8( x, x);
 }
 
 /// Adjust a scaling value for dimming for video (value will never go below 1)
-LIB8STATIC uint8_t dim8_video( uint8_t x)
+LIB8STATIC_ALWAYS_INLINE uint8_t dim8_video( uint8_t x)
 {
-    return scale8_video( x, x);
+  return scale8_video( x, x);
 }
 
 /// Linear version of the dimming function that halves for values < 128
 LIB8STATIC uint8_t dim8_lin( uint8_t x )
 {
-    if( x & 0x80 ) {
-        x = scale8( x, x);
-    } else {
-        x += 1;
-        x /= 2;
-    }
-    return x;
+  return ( x & 0x80 ) ? scale8( x, x) : ( (x+1) >> 1 );
 }
 
 /// inverse of the dimming function, brighten a value
-LIB8STATIC uint8_t brighten8_raw( uint8_t x)
+LIB8STATIC_ALWAYS_INLINE uint8_t brighten8_raw( uint8_t x)
 {
-    uint8_t ix = 255 - x;
-    return 255 - scale8( ix, ix);
+  return ~(unsigned)dim8_raw( ~(unsigned)x );
 }
 
 /// inverse of the dimming function, brighten a value
-LIB8STATIC uint8_t brighten8_video( uint8_t x)
+LIB8STATIC_ALWAYS_INLINE uint8_t brighten8_video( uint8_t x)
 {
-    uint8_t ix = 255 - x;
-    return 255 - scale8_video( ix, ix);
+  return ~(unsigned)dim8_video( ~(unsigned)x );
 }
 
 /// inverse of the dimming function, brighten a value
-LIB8STATIC uint8_t brighten8_lin( uint8_t x )
+LIB8STATIC_ALWAYS_INLINE uint8_t brighten8_lin( uint8_t x )
 {
-    uint8_t ix = 255 - x;
-    if( ix & 0x80 ) {
-        ix = scale8( ix, ix);
-    } else {
-        ix += 1;
-        ix /= 2;
-    }
-    return 255 - ix;
+  return ~(unsigned)dim8_lin( ~(unsigned)x );
 }
 
 ///@}

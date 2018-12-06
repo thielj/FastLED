@@ -299,8 +299,7 @@ struct CRGB {
     /// subtract a constant of '1' from each channel, saturating at 0x00
     inline CRGB& operator-- ()  __attribute__((always_inline))
     {
-        subtractFromRGB(1);
-        return *this;
+        return subtractFromRGB(1);
     }
 
     /// subtract a constant of '1' from each channel, saturating at 0x00
@@ -314,8 +313,7 @@ struct CRGB {
     /// add a constant of '1' from each channel, saturating at 0xFF
     inline CRGB& operator++ ()  __attribute__((always_inline))
     {
-        addToRGB(1);
-        return *this;
+        return addToRGB(1);
     }
 
     /// add a constant of '1' from each channel, saturating at 0xFF
@@ -382,7 +380,7 @@ struct CRGB {
     ALWAYS_INLINE
     inline CRGB& fadeLightBy (fract8 fadefactor )
     {
-        return nscale8_video( 255 - fadefactor);
+        return nscale8_video( ~(unsigned)fadefactor);
     }
 
     /// scale down a RGB to N 256ths of it's current brightness, using
@@ -434,7 +432,7 @@ struct CRGB {
     ALWAYS_INLINE
     inline CRGB& fadeToBlackBy (fract8 fadefactor )
     {
-        return nscale8( 255 - fadefactor);
+        return nscale8( ~(unsigned)fadefactor);
     }
 
     /// "or" operator brings each channel up to the higher of the two values
@@ -483,9 +481,9 @@ struct CRGB {
     inline CRGB operator- ()
     {
         CRGB retval;
-        retval.r = 255 - r;
-        retval.g = 255 - g;
-        retval.b = 255 - b;
+        retval.r = ~(unsigned)r;
+        retval.g = ~(unsigned)g;
+        retval.b = ~(unsigned)b;
         return retval;
     }
 
